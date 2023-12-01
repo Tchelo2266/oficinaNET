@@ -1,53 +1,62 @@
 <script setup>
 import { onMounted } from "vue"
 
+const baseUrl = "https://localhost:7294/tipoServico";
+
 // Variaveis de controle
 const editando = ref(false);
 
 // Listas
-const listaClientes = ref();
+const listaTipoServico = ref();
 
 // Objetos
-const objCliente = ref({});
+const objTipoServico = ref({});
 
 onMounted(async () => {
-    await bucsaClientes();
-})
+    let response = await $fetch(baseUrl);
+    console.log(response);
 
-async function bucsaClientes() {
-    let response = await $fetch("https://localhost:7294/cliente");
-    listaClientes.value = response;
-}
+    listaTipoServico.value = response;
+})
 
 
 async function salvar(){
     if(editando.value){
-        await $fetch("https://localhost:7294/cliente/"+ objCliente.value.id, {method: "PUT", body: objCliente.value});
-        await bucsaClientes();
-        objCliente.value = {};
-        editando.value = false;
+        let response = await $fetch(baseUrl + "/"+ objTipoServico.value.id, {method: "PUT", body: objTipoServico.value});
+        if(response.id){
+            let idx = listaTipoServico.value.findIndex(item => item.id == objTipoServico.value.id)
+            listaTipoServico.value[idx] = response;
+            objTipoServico.value = {};
+            editando.value = false;
+        }
     }else{
-        objCliente.value.quemCadastrou = 1;
-        await $fetch("https://localhost:7294/cliente", {method: "POST", body: objCliente.value});
-        await bucsaClientes();
-        objCliente.value = {};
+        objTipoServico.value.quemCadastrou = 1;
+        let response = await $fetch(baseUrl, {method: "POST", body: objTipoServico.value});
+        if(response.id > 0){
+            listaTipoServico.value.push(response);
+        }
+        console.log(response);
+        objTipoServico.value = {};
     }
 }
 
 function editar(clienteId) {
-     let object = listaClientes.value.find(item => item.id == clienteId);
-    for (const key in object) {
-        objCliente.value[key] = object[key];
-    }
+    objTipoServico.value = listaTipoServico.value.find(item => item.id == clienteId);
     editando.value = true;
 }
 
-function excluir(clienteId) {
-    console.log("excluir");
+async function excluir(tipoServicoId) {
+    let response = await $fetch(baseUrl + "/"+ tipoServicoId, {method: "DELETE"});
+    let idx = listaTipoServico.value.findIndex(item => item.id == tipoServicoId)
+    listaTipoServico.value.splice(idx, 1);
+    // listaTipoServico.value = listaTipoServico.value.slice(idx, idx);
+    // listaTipoServico.value[idx] = response;
+    objTipoServico.value = {};
+    editando.value = false;
 }
 
 function cancelar() {
-    objCliente.value = {};
+    objTipoServico.value = {};
     editando.value = false;
 }
 
@@ -57,8 +66,8 @@ function cancelar() {
     <div>
         <div class="container-fluid">
             <div class="row">
-                <div class="col-2">
-                    <h1 class="titulo-pagina">Clientes</h1>
+                <div class="col-3">
+                    <h1 class="titulo-pagina">Tipo de serviço</h1>
                     <hr class="ms-3 mt-1">
                 </div>
             </div>
@@ -67,12 +76,8 @@ function cancelar() {
                     <div class="formulario">
                         <div class="row mb-3">
                             <div class="col-md-5 col-sm-10">
-                                <label class="form-label" for="nome">Nome</label>
-                                <input class="form-control" type="text" name="nome" id="nome" v-model="objCliente.nome"/>
-                            </div>
-                            <div class="col-md-5 col-sm-10 ">
-                                <label class="form-label" for="telefone">Telefone</label>
-                                <input class="form-control" type="text" name="telefone" id="telefone" v-model="objCliente.telefone"/>
+                                <label class="form-label" for="descricao">Descrição</label>
+                                <input class="form-control" type="text" name="descricao" id="descricao" v-model="objTipoServico.descricao"/>
                             </div>
                         </div>
                         <div class="row">
@@ -93,20 +98,18 @@ function cancelar() {
                         <table class="table table-striped table-bordered">
                             <thead>
                                 <tr>
-                                    <th>Nome</th>
-                                    <th>Telefone</th>
+                                    <th>Descerição</th>
                                     <th></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="cliente in listaClientes">
-                                    <td>{{ cliente.nome }}</td>
-                                    <td>{{ cliente.telefone }}</td>
+                                <tr v-for="tipoServico in listaTipoServico">
+                                    <td>{{ tipoServico.descricao }}</td>
                                     <td>
-                                        <button class="btn btn-sm" @click="editar(cliente.id)">
+                                        <button class="btn btn-sm" @click="editar(tipoServico.id)">
                                             <Icon name="ic:baseline-edit" color="black" style="font-size: large;" />
                                         </button>
-                                        <button class="btn btn-sm" @click="excluir(cliente.id)">
+                                        <button class="btn btn-sm" @click="excluir(tipoServico.id)">
                                             <Icon name="ic:baseline-delete-forever" color="red" style="font-size: large;" />
                                         </button>
                                     </td>

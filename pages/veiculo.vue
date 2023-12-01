@@ -1,33 +1,52 @@
 <script setup>
 import { onMounted } from "vue"
 
-const baseUrlServico = "https://localhost:7294/servico";
 const baseUrlVeiculo = "https://localhost:7294/veiculo";
 const baseUrlCliente = "https://localhost:7294/cliente";
-const baseUrlTipoServico = "https://localhost:7294/tipoServico";
 
 // Variaveis de controle
 const editando = ref(false);
 
 // Listas
-const listaServico = ref([]);
-const listaTipoServico = ref([]);
 const listaCliente = ref([]);
 const listaVeiculo = ref([]);
 
 // Objetos
-const objServico = ref({});
+const objVeiculo = ref({});
 const cliente = ref(0);
-const veiculo = ref();
-const tipoServico = ref();
 
 onMounted(async () => {
-    listaTipoServico.value = await $fetch(baseUrlTipoServico);
     listaCliente.value = await $fetch(baseUrlCliente);    
 })
 
 async function buscaVeiculos() {
     listaVeiculo.value = await $fetch(`${baseUrlVeiculo}/cliente/${cliente.value}`);
+}
+
+function editar(veiculoId) {
+    let veiculo = listaVeiculo.value.find(item => item.id == veiculoId);
+    for (const key in veiculo) {
+        objVeiculo.value[key] = veiculo[key];
+    }
+    editando.value = true;
+}
+
+async function salvar(){
+    if(editando.value){
+        await $fetch(baseUrlVeiculo, {method: "PUT", body: objVeiculo.value});
+        await buscaVeiculos();
+        objVeiculo.value = {};
+        editando.value = false;
+    }else{
+        objVeiculo.value.quemCadastrou = 1;
+        objVeiculo.value.clienteId = cliente.value;
+        let response = await $fetch(baseUrlVeiculo, {method: "POST", body: objVeiculo.value});
+        if(response.id > 0){
+            listaVeiculo.value.push(response);
+        }
+        console.log(response);
+        objVeiculo.value = {};
+    }
 }
 
 </script>
@@ -36,14 +55,14 @@ async function buscaVeiculos() {
     <div class="container-fluid">
         <div class="row">
             <div class="col-3">
-                <h1 class="titulo-pagina">Tipo de serviço</h1>
+                <h1 class="titulo-pagina">Veículos</h1>
                 <hr class="ms-3 mt-1">
             </div>
         </div>
         <div class="row ms-1">
             <div class="col-6">
                 <div class="formulario">
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-md-5 col-sm-10">
                             <label class="form-label" for="descricao">Cliente</label>
                             <select class="form-select" name="cliente" id="cliente" v-model="cliente" @change="buscaVeiculos">
@@ -52,24 +71,16 @@ async function buscaVeiculos() {
                             </select>
                         </div>
                         <div class="col-md-5 col-sm-10">
-                            <label class="form-label" for="descricao">Veiculo</label>
-                            <select class="form-select" name="veiculo" id="veiculo" v-model="veiculo" @input="">
-                                <option value="0">Selecione</option>
-                                <option v-for="(item, index) in listaVeiculo" :key="index" :value="item.id">{{ item.nome }}</option>
-                            </select>
+                            <label class="form-label" for="marca">Marca</label>
+                            <input class="form-control" type="text" name="marca" id="marca" v-model="objVeiculo.marca"/>
                         </div>
                         <div class="col-md-5 col-sm-10">
-                            <label class="form-label" for="descricao">Tipo serviço</label>
-                            <select class="form-select" name="tipoServico" id="tipoServico" v-model="tipoServico">
-                                <option value="0">Selecione</option>
-                                <option v-for="(item, index) in listaTipoServico" :key="index" :value="item.id">{{ item.descricao }}</option>
-                            </select>
+                            <label class="form-label" for="modelo">Modelo</label>
+                            <input class="form-control" type="text" name="modelo" id="modelo" v-model="objVeiculo.modelo"/>
                         </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-10 col-sm-10">
-                            <label class="form-label" for="descricao">Descricao</label>
-                            <textarea class="form-control" type="text" name="descricao" id="descricao" v-model="objServico.descricao"/>
+                        <div class="col-md-5 col-sm-10">
+                            <label class="form-label" for="placa">Placa</label>
+                            <input class="form-control" type="text" name="placa" id="placa" v-model="objVeiculo.placa"/>
                         </div>
                     </div>
                     <div class="row">
@@ -90,17 +101,18 @@ async function buscaVeiculos() {
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th>Descerição</th>
-                                <th>Data</th>
+                                <th>Modelo</th>
+                                <th>Placa</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="listaServico.length == 0">
+                            <tr v-if="listaVeiculo.length == 0">
                                 <td colspan="3">Nenhum registro encontrado</td>
                             </tr>
-                            <!-- <tr v-for="tipoServico in listaTipoServico">
-                                <td>{{ tipoServico.descricao }}</td>
+                            <tr v-else v-for="tipoServico in listaVeiculo">
+                                <td>{{ tipoServico.modelo }}</td>
+                                <td>{{ tipoServico.placa }}</td>
                                 <td>
                                     <button class="btn btn-sm" @click="editar(tipoServico.id)">
                                         <Icon name="ic:baseline-edit" color="black" style="font-size: large;" />
@@ -109,7 +121,7 @@ async function buscaVeiculos() {
                                         <Icon name="ic:baseline-delete-forever" color="red" style="font-size: large;" />
                                     </button>
                                 </td>
-                            </tr> -->
+                            </tr>
                         </tbody>
                     </table>
                 </div>

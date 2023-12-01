@@ -11,8 +11,16 @@ const paginas = ref([
         rota: "cliente"
     },
     {
+        titulo: "Veículos",
+        rota: "veiculo"
+    },
+    {
         titulo: "Servicos",
         rota: "servico"
+    },
+    {
+        titulo: "Tipo de serviço",
+        rota: "tipoServico"
     }
 ])
 
