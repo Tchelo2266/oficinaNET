@@ -13,31 +13,25 @@ const listaTipoServico = ref();
 const objTipoServico = ref({});
 
 onMounted(async () => {
-    let response = await $fetch(baseUrl);
-    console.log(response);
-
-    listaTipoServico.value = response;
+    await buscaTipoServico();
 })
+
+async function buscaTipoServico() {
+    let response = await $fetch(baseUrl);
+    listaTipoServico.value = response;
+}
 
 
 async function salvar(){
     if(editando.value){
-        let response = await $fetch(baseUrl + "/"+ objTipoServico.value.id, {method: "PUT", body: objTipoServico.value});
-        if(response.id){
-            let idx = listaTipoServico.value.findIndex(item => item.id == objTipoServico.value.id)
-            listaTipoServico.value[idx] = response;
-            objTipoServico.value = {};
-            editando.value = false;
-        }
+        await $fetch(baseUrl + "/"+ objTipoServico.value.id, {method: "PUT", body: objTipoServico.value});
+        editando.value = false;
     }else{
         objTipoServico.value.quemCadastrou = 1;
-        let response = await $fetch(baseUrl, {method: "POST", body: objTipoServico.value});
-        if(response.id > 0){
-            listaTipoServico.value.push(response);
-        }
-        console.log(response);
+        await $fetch(baseUrl, {method: "POST", body: objTipoServico.value});
         objTipoServico.value = {};
     }
+    await buscaTipoServico();
 }
 
 function editar(clienteId) {
@@ -46,12 +40,8 @@ function editar(clienteId) {
 }
 
 async function excluir(tipoServicoId) {
-    let response = await $fetch(baseUrl + "/"+ tipoServicoId, {method: "DELETE"});
-    let idx = listaTipoServico.value.findIndex(item => item.id == tipoServicoId)
-    listaTipoServico.value.splice(idx, 1);
-    // listaTipoServico.value = listaTipoServico.value.slice(idx, idx);
-    // listaTipoServico.value[idx] = response;
-    objTipoServico.value = {};
+    await $fetch(baseUrl + "/"+ tipoServicoId, {method: "DELETE"});
+    await buscaTipoServico();
     editando.value = false;
 }
 

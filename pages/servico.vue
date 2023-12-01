@@ -17,9 +17,9 @@ const listaVeiculo = ref([]);
 
 // Objetos
 const objServico = ref({});
-const cliente = ref(0);
-const veiculo = ref();
-const tipoServico = ref();
+// const cliente = ref(0);
+// const veiculo = ref();
+// const tipoServico = ref();
 
 onMounted(async () => {
     listaTipoServico.value = await $fetch(baseUrlTipoServico);
@@ -27,7 +27,50 @@ onMounted(async () => {
 })
 
 async function buscaVeiculos() {
-    listaVeiculo.value = await $fetch(`${baseUrlVeiculo}/cliente/${cliente.value}`);
+    listaVeiculo.value = await $fetch(`${baseUrlVeiculo}/cliente/${objServico.value.clienteId}`);
+}
+
+async function buscaServicos() {
+    objServico.value.tipoServicoId = 0;
+    objServico.value.descricao = "";
+    listaServico.value = await $fetch(`${baseUrlServico}/cliente/${objServico.value.clienteId}/veiculo/${objServico.value.veiculoId}`);
+    console.log(listaServico.value);
+}
+
+function editar(servico) {
+    editando.value = true;;
+    objServico.value = copiaObj(servico);
+}
+
+async function excluir(servico) {
+    await $fetch(`${baseUrlServico}/${servico.id}`, {method: "DELETE"});
+    await buscaServicos();
+}
+
+
+async function salvar() {
+    let data = copiaObj(objServico.value);
+    let metodo = editando.value ? "PUT" : "POST";
+
+    await $fetch(baseUrlServico, {method: metodo, body: data});
+    await buscaServicos();
+}
+
+function formataData(dataSemFormato) {
+    let dia, mes, ano;
+    let data = new Date(dataSemFormato);
+    dia = data.getDate().toString().padStart(2, 0);
+    mes = (data.getMonth() + 1).toString().padStart(2, 0);
+    ano = data.getFullYear();
+    return `${dia}/${mes}/${ano}`;
+}
+
+function copiaObj(obj) {
+    let copia = {};
+    for (const key in obj) {
+        copia[key] = obj[key];
+    }
+    return copia;
 }
 
 </script>
@@ -46,21 +89,21 @@ async function buscaVeiculos() {
                     <div class="row">
                         <div class="col-md-5 col-sm-10">
                             <label class="form-label" for="descricao">Cliente</label>
-                            <select class="form-select" name="cliente" id="cliente" v-model="cliente" @change="buscaVeiculos">
+                            <select class="form-select" name="cliente" id="cliente" v-model="objServico.clienteId" @change="buscaVeiculos">
                                 <option value="0">Selecione</option>
                                 <option v-for="item in listaCliente" :key="item.id" :value="item.id">{{ item.nome }}</option>
                             </select>
                         </div>
                         <div class="col-md-5 col-sm-10">
                             <label class="form-label" for="descricao">Veiculo</label>
-                            <select class="form-select" name="veiculo" id="veiculo" v-model="veiculo" @input="">
+                            <select class="form-select" name="veiculo" id="veiculo" v-model="objServico.veiculoId" @change="buscaServicos" :disabled="!objServico.clienteId">
                                 <option value="0">Selecione</option>
-                                <option v-for="(item, index) in listaVeiculo" :key="index" :value="item.id">{{ item.nome }}</option>
+                                <option v-for="(item, index) in listaVeiculo" :key="index" :value="item.id">{{ item.modelo }} - {{ item.placa }}</option>
                             </select>
                         </div>
                         <div class="col-md-5 col-sm-10">
                             <label class="form-label" for="descricao">Tipo serviço</label>
-                            <select class="form-select" name="tipoServico" id="tipoServico" v-model="tipoServico">
+                            <select class="form-select" name="tipoServico" id="tipoServico" v-model="objServico.tipoServicoId">
                                 <option value="0">Selecione</option>
                                 <option v-for="(item, index) in listaTipoServico" :key="index" :value="item.id">{{ item.descricao }}</option>
                             </select>
@@ -99,17 +142,18 @@ async function buscaVeiculos() {
                             <tr v-if="listaServico.length == 0">
                                 <td colspan="3">Nenhum registro encontrado</td>
                             </tr>
-                            <!-- <tr v-for="tipoServico in listaTipoServico">
-                                <td>{{ tipoServico.descricao }}</td>
+                            <tr v-for="servico in listaServico">
+                                <td>{{ servico.descricao }}</td>
+                                <td>{{ formataData(servico.dataCadastro) }}</td>
                                 <td>
-                                    <button class="btn btn-sm" @click="editar(tipoServico.id)">
+                                    <button class="btn btn-sm" @click="editar(servico)">
                                         <Icon name="ic:baseline-edit" color="black" style="font-size: large;" />
                                     </button>
-                                    <button class="btn btn-sm" @click="excluir(tipoServico.id)">
+                                    <button class="btn btn-sm" @click="excluir(servico)">
                                         <Icon name="ic:baseline-delete-forever" color="red" style="font-size: large;" />
                                     </button>
                                 </td>
-                            </tr> -->
+                            </tr>
                         </tbody>
                     </table>
                 </div>
